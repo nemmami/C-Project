@@ -11,6 +11,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+#include "message.h"
 #include "utils_v1.h"
 
 int main(int argc, char **argv)
@@ -30,12 +31,9 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    //semaphore
+    // semaphore
+    sshmget(LLN_SHM_KEY, 2 * sizeof(int), IPC_CREAT | PERM);
 
+    
     printf("%d", montant);
-
-
-
-
-
 }
