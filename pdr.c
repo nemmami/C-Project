@@ -18,7 +18,7 @@ int main(int argc, char **argv)
 {
     if (argc != 3)
     {
-        printf("%s\n", "Usage argv[0] clientID monttant");
+        printf("%s\n", "Usage argv[0] clientID montant");
         exit(1);
     }
 
