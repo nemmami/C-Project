@@ -15,15 +15,14 @@ pdr.o : pdr.c utils_v1.h message.h
 server : server.o 
 	$(CC) $(CCFLAGS) -o server server.o utils_v1.o
 
-server.o: server.c utils_v1.o
+server.o: server.c utils_v1.o message.h
 	$(CC) $(CCFLAGS) -c server.c 
 
 client : client.o 
 	$(CC) $(CCFLAGS) -o client client.o utils_v1.o
 
-client.o: client.c utils_v1.o
+client.o: client.c utils_v1.o message.h
 	$(CC) $(CCFLAGS) -c client.c
-
 
 
 utils_v1.o: utils_v1.c utils_v1.h
