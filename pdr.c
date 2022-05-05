@@ -18,7 +18,7 @@ int main(int argc, char **argv)
 {
     if (argc != 3)
     {
-        printf("%s\n", "Usage argv[0] clientID montant");
+        printf("%s\n", "Usage argv[0] numeroCompte montant");
         exit(1);
     }
 
@@ -27,13 +27,24 @@ int main(int argc, char **argv)
 
     if (numClient > 1000 || numClient < 0)
     {
-        printf("Numéro de client n'existe pas");
+        printf("NumÃ©ro de client inexistant");
         exit(1);
     }
 
-    // semaphore
-    sshmget(LLN_SHM_KEY, 2 * sizeof(int), IPC_CREAT | PERM);
+    int id = sshmget(SHM_KEY, 1000 * sizeof(int), 0);
+    int* tab = sshmat(id);
 
-    
-    printf("%d", montant);
+    int semId = sem_get(SEM_KEY, 1);
+
+    sem_down0(semId);
+    //debut zone critique
+    tab[numClient] += montant;
+    printf("nouveau montant : %d\n", tab[numClient]);
+    //fin zone critique
+    sem_up0(semId);
+
+    sshmdt(tab);
+    //sshmdelete(id);
+
+    exit(EXIT_SUCCESS);
 }
