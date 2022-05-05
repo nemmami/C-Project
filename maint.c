@@ -32,7 +32,7 @@ int main(int argc, char **argv)
         // creation semapgore
         sem_create(SEM_KEY, 1, PERM, 1);
 
-        printf("IPCs created.");
+        printf("IPCs created.\n");
     }
     else if (type == 2)
     {
