@@ -18,7 +18,7 @@ int main(int argc, char **argv)
 {
     if (argc != 2 && argc != 3)
     {
-        printf(stderr, "Usage argv[0] type (opt)");
+        printf("Usage argv[0] type (opt)");
         exit(1);
     }
 
@@ -26,30 +26,47 @@ int main(int argc, char **argv)
 
     if (type == 1)
     {
-        int shm_id = shmget(TRAIN_SHM_KEY, 2 * sizeof(pid_t), IPC_CREAT | IPC_EXCL | PERM);
-        checkNeg(shm_id, "IPCs already created");
+        // creation memoire partagé
+        sshmget(SHM_KEY, 1000 * sizeof(int), IPC_CREAT | IPC_EXCL | PERM);
 
-        sem_create(TRAIN_SEM_KEY, 1, PERM, 0);
+        // creation semapgore
+        sem_create(SEM_KEY, 1, PERM, 1);
 
-        printf("IPCs created.\n");
+        printf("IPCs created.");
     }
     else if (type == 2)
     {
         printf("Destroying IPCs...\n");
-        int shm_id = shmget(TRAIN_SHM_KEY, 2 * sizeof(pid_t), 0);
-        checkNeg(shm_id, "IPCs not existing");
-
+        // get identifiant de la memoire partagé
+        int shm_id = sshmget(SHM_KEY, 1000 * sizeof(int), 0);
+        // get id du sem
+        int sem_id = sem_get(SEM_KEY, 1);
+        // suprime la memoire partagé
         sshmdelete(shm_id);
-
-        int sem_id = sem_get(TRAIN_SEM_KEY, 1);
+        // supprime le semaphore
         sem_delete(sem_id);
 
         printf("IPCs freed.\n");
     }
     else if (type == 3)
     {
+        if (argc != 3)
+        {
+            printf("La duree n'est pas donnée");
+            exit(1);
+        }
+        int opt = atoi(argv[2]);
+        int sem_id = sem_get(SEM_KEY, 1);
+
+        sem_down0(sem_id);
+        sleep(opt);
+        sem_up0(sem_id);
     }
     else
     {
+        printf("Type incorrect !");
+        exit(0);
     }
+
+    return 0;
 }
