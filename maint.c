@@ -29,7 +29,7 @@ int main(int argc, char **argv)
         // creation memoire partagé
         sshmget(SHM_KEY, 1000 * sizeof(int), IPC_CREAT | IPC_EXCL | PERM);
 
-        // creation semapgore
+        // creation semaphore
         sem_create(SEM_KEY, 1, PERM, 1);
 
         printf("IPCs created.\n");

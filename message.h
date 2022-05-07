@@ -16,6 +16,9 @@
 #define SHM_KEY 1234
 #define SEM_KEY 4567
 
+#define MESSAGE_SIZE 8192
+#define BACKLOG 5
+
 /* struct message used between server and client */
 typedef struct {
   char messageText[MAX_PSEUDO];

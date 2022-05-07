@@ -39,11 +39,12 @@ int main(int argc, char **argv)
     sem_down0(semId);
     //debut zone critique
     tab[numClient] += montant;
-    printf("nouveau montant : %d\n", tab[numClient]);
+    printf("Nouveau solde du compte %d : %d\n", numClient, tab[numClient]);
     //fin zone critique
     sem_up0(semId);
-
+    
     sshmdt(tab);
+
     //sshmdelete(id);
 
     exit(EXIT_SUCCESS);

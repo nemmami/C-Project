@@ -11,36 +11,34 @@
 #include <poll.h>
 
 #include "utils_v1.h"
-
-#define MESSAGE_SIZE 8192
-#define BACKLOG 5
+#include "message.h"
 
 /* return sockfd */
 int initSocketServer(int port)
 {
 	int sockfd = ssocket();
-
 	/* no socket error */
 
 	sbind(port, sockfd);
-
 	/* no bind error */
+	
 	slisten(sockfd, BACKLOG);
-
 	/* no listen error */
+	
 	return sockfd;
 }
 
 int main(int argc, char **argv)
 {
 	int sockfd, newsockfd;
-	struct sockaddr_in addr;
+	//struct sockaddr_in addr;
 	/* 1024 client connections MAX */
 	struct pollfd fds[1024];
 	bool fds_invalid[1024];
 	int nbSockfd = 0;
 	int i;
-	char msg[MESSAGE_SIZE];
+	//char msg[MESSAGE_SIZE];
+	Virement virement;
 
 	srand(time(NULL));
 
@@ -50,14 +48,15 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	// addr_size = sizeof(struct sockaddr_in);
+	//addr_size = sizeof(struct sockaddr_in);
 	sockfd = initSocketServer(atoi(argv[1]));
 	printf("Le serveur est à l'écoute sur le port : %i \n", atoi(argv[1]));
 
 	fds[nbSockfd].fd = sockfd;
 	fds[nbSockfd].events = POLLIN;
-	fds_invalid[nbSockfd] = false;
 	nbSockfd++;
+	fds_invalid[nbSockfd] = false;
+	
 
 	while (1)
 	{
@@ -78,14 +77,26 @@ int main(int argc, char **argv)
 		// trt messages clients
 		for (i = 1; i < nbSockfd; i++)
 		{
-			if (fds[i].revents & POLLIN && !fds_invalid[i])
+			if (fds[i].revents & POLLIN & !fds_invalid[i])
 			{
+				recv(fds[i].fd, &virement, sizeof(Virement), 0);
+				printf("Virement de %d euro du compte %d vers le compte %d\n", virement.montant, virement.compteSource, virement.compteDestination);
 
-				sread(fds[i].fd, msg, sizeof(msg));
+				int idShm = sshmget(SHM_KEY, 1000 * sizeof(int), 0);
+    			int* tab = sshmat(idShm);
+    			int semId = sem_get(SEM_KEY, 1);
 
-				printf("MESSAGE RECU DE : %s - ADRESSE IP CLIENT : %s\n", msg, inet_ntoa(addr.sin_addr));
+    			sem_down0(semId);
+    			//debut zone critique
+    			tab[virement.compteSource] -= virement.montant;
+    			printf("Nouveau solde du compte %d : %d\n", virement.compteSource, tab[virement.compteSource]);
+    			tab[virement.compteDestination] += virement.montant;
+    			printf("Nouveau solde du compte %d : %d\n", virement.compteDestination, tab[virement.compteDestination]);
+    			//fin zone critique
+    			sem_up0(semId);
 
-				sleep(2);
+    			sshmdt(tab);
+
 				sclose(fds[i].fd);
 				fds_invalid[i] = true;
 			}
