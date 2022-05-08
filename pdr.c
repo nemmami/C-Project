@@ -32,20 +32,20 @@ int main(int argc, char **argv)
     }
 
     int id = sshmget(SHM_KEY, 1000 * sizeof(int), 0);
-    int* tab = sshmat(id);
+    int *tab = sshmat(id);
 
     int semId = sem_get(SEM_KEY, 1);
 
     sem_down0(semId);
-    //debut zone critique
+    // debut zone critique
     tab[numClient] += montant;
     printf("Nouveau solde du compte %d : %d\n", numClient, tab[numClient]);
-    //fin zone critique
+    // fin zone critique
     sem_up0(semId);
-    
+
     sshmdt(tab);
 
-    //sshmdelete(id);
+    // sshmdelete(id);
 
     exit(EXIT_SUCCESS);
 }

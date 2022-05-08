@@ -37,49 +37,62 @@ int main(int argc, char **argv)
 	int sockfd = initSocketClient(argv[1], atoi(argv[2]));
 	bool onContinue = true;
 
-	printf("Bienvenue votre banque !\n");
+	printf("Bienvenue sur votre banque !\n");
 	printf("\n");
-	while(onContinue) {
-		
+	while (onContinue)
+	{
 		printf("Veuillez entrez une de ces 3 commandes : \n");
-		printf("1) Effectuer un virement : + n2 somme\n");
-		printf("2) Ajouter un nouveau virement réccurent :  * n2 somme\n");
-		printf("3) Quitter votre espace client :  q\n");
+		printf("\tEffectuer un virement : + n2 somme\n");
+		printf("\tAjouter un nouveau virement réccurent :  * n2 somme\n");
+		printf("\tQuitter votre espace client :  q\n");
 
 		char msg[MESSAGE_SIZE];
 		sread(0, msg, 256);
 
 		/* on sépare chacunes des données de la commande */
-		char* phr[3]; //phr[0] == +/*  phr[1] == n2  phr[2] == somme
+		char *phr[3]; // phr[0] == +/*  phr[1] == n2  phr[2] == somme
 		int i = 0;
 		char d[] = " ";
 		char *p = strtok(msg, d);
-		while(p != NULL) {
+		while (p != NULL)
+		{
 			phr[i] = p;
-			//printf("'%s'\n", p);
+			printf("'%s'\n", p);
 			p = strtok(NULL, d);
 			i++;
 		}
 		/* fin de traitement */
 
-		if(msg[0] == '+') {
+		if (msg[0] == '+')
+		{
 			Virement virement;
 			virement.compteSource = atoi(argv[3]);
 			virement.compteDestination = atoi(phr[1]);
 			virement.montant = atoi(phr[2]);
 			send(sockfd, &virement, sizeof(Virement), 0);
-		} else if(msg[0] == '*') {
-
-		} else if(msg[0] == 'q') {
+		}
+		else if (msg[0] == '*')
+		{
+			MessagePipe msgpipe;
+			msgpipe.type = 1;
+			msgpipe.virement.compteDestination = atoi(phr[1]);
+			msgpipe.virement.montant = atoi(phr[2]);
+			swrite(sockfd, &msgpipe, sizeof(MessagePipe));
+		}
+		else if (msg[0] == 'q')
+		{
 			onContinue = false;
-		} else {
+			sclose(sockfd);
+			printf("\nVous êtes déconnecté! \n");
+			break;
+		}
+		else
+		{
 			printf("tu t'es trompé akhi");
 		}
-		
 
-		//swrite(sockfd, msg, sizeof(msg));
+		// swrite(sockfd, msg, sizeof(msg));
 
-		
 		/* wait server response */
 		/*
 		sread(sockfd, msg, sizeof(msg));
@@ -87,7 +100,7 @@ int main(int argc, char **argv)
 		printf("Réponse du serveur : \n");
 		printf("%s\n", msg);
 		*/
-		printf("\n");	
+		printf("\n");
 	}
 
 	sclose(sockfd);

@@ -21,23 +21,23 @@ int initSocketServer(int port)
 
 	sbind(port, sockfd);
 	/* no bind error */
-	
+
 	slisten(sockfd, BACKLOG);
 	/* no listen error */
-	
+
 	return sockfd;
 }
 
 int main(int argc, char **argv)
 {
 	int sockfd, newsockfd;
-	//struct sockaddr_in addr;
+	// struct sockaddr_in addr;
 	/* 1024 client connections MAX */
 	struct pollfd fds[1024];
 	bool fds_invalid[1024];
 	int nbSockfd = 0;
 	int i;
-	//char msg[MESSAGE_SIZE];
+	// char msg[MESSAGE_SIZE];
 	Virement virement;
 
 	srand(time(NULL));
@@ -48,7 +48,7 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	//addr_size = sizeof(struct sockaddr_in);
+	// addr_size = sizeof(struct sockaddr_in);
 	sockfd = initSocketServer(atoi(argv[1]));
 	printf("Le serveur est à l'écoute sur le port : %i \n", atoi(argv[1]));
 
@@ -56,7 +56,6 @@ int main(int argc, char **argv)
 	fds[nbSockfd].events = POLLIN;
 	nbSockfd++;
 	fds_invalid[nbSockfd] = false;
-	
 
 	while (1)
 	{
@@ -83,19 +82,20 @@ int main(int argc, char **argv)
 				printf("Virement de %d euro du compte %d vers le compte %d\n", virement.montant, virement.compteSource, virement.compteDestination);
 
 				int idShm = sshmget(SHM_KEY, 1000 * sizeof(int), 0);
-    			int* tab = sshmat(idShm);
-    			int semId = sem_get(SEM_KEY, 1);
+				int *tab = sshmat(idShm);
+				int semId = sem_get(SEM_KEY, 1);
 
-    			sem_down0(semId);
-    			//debut zone critique
-    			tab[virement.compteSource] -= virement.montant;
-    			printf("Nouveau solde du compte %d : %d\n", virement.compteSource, tab[virement.compteSource]);
-    			tab[virement.compteDestination] += virement.montant;
-    			printf("Nouveau solde du compte %d : %d\n", virement.compteDestination, tab[virement.compteDestination]);
-    			//fin zone critique
-    			sem_up0(semId);
+				sem_down0(semId);
+				// debut zone critique
+				tab[virement.compteSource] -= virement.montant;
+				printf("Nouveau solde du compte %d : %d\n", virement.compteSource, tab[virement.compteSource]);
+				tab[virement.compteDestination] += virement.montant;
+				printf("Nouveau solde du compte %d : %d\n", virement.compteDestination, tab[virement.compteDestination]);
+				printf("\n");
+				// fin zone critique
+				sem_up0(semId);
 
-    			sshmdt(tab);
+				sshmdt(tab);
 
 				sclose(fds[i].fd);
 				fds_invalid[i] = true;
