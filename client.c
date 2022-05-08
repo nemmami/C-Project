@@ -7,6 +7,7 @@
 #include <string.h>
 #include <time.h>
 #include <fcntl.h>
+#include <unistd.h>
 
 #include "utils_v1.h"
 #include "message.h"
@@ -33,8 +34,61 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
+	// gerer pipe et enfants
+	int fd[2]; // fd[0] == READ, fd[1] WRITE
+	spipe(fd);
+	pid_t filsID1 = sfork(); // fils 1 minuterie
+
+	// creer la liste des virement pour les virement recurent
+	int tailleLogique = 0;
+	Virement *vList = (Virement *)malloc(sizeof(Virement) * 10);
+
+	if (vList == NULL)
+	{
+		perror("Out of memory\n");
+		exit(EXIT_FAILURE);
+	}
+
+	if (filsID1 == 0) // minuterie
+	{
+		// cloture du descripteur de lecture, peut plus lire dans le pipe
+		sclose(fd[0]);
+		MessagePipe msgpipe;
+		msgpipe.type = 0;
+		while (TRUE)
+		{
+			// le delay
+			sleep(atoi(argv[4]))
+				swrite(fd[1], &msgpipe, sizeof(MessagePipe));
+		}
+	}
+	else // virement recurent
+	{
+		pid_t filsID2 = sfork();
+		if (filsID2 == 0)
+		{
+			// cloture du descripteur d'écritue, peut plus ecrire dans le pipe
+			sclose(fd[1]);
+			while (TRUE)
+			{
+				MessagePipe msgpipe;
+				int a = sread(fd[1], &msgpipe, sizeof(MessagePipe));
+
+				if (msgpipe.type) // type et 1 sa continue
+				{
+					// ajouter les virement dans la liste
+					Virement *v = &vList[*tailleLogique];
+					v->compteSource = atoi(argv[3]);
+					v->compteDestination = msgpipe.virement.compteDestination;
+					v->montant = msgpipe.virement.montant;
+					(*tailleLogique)++;
+				}
+			}
+		}
+	}
+
 	// initClient before read keyboard ... not a good idea
-	//int sockfd = initSocketClient(argv[1], atoi(argv[2]));
+	// int sockfd = initSocketClient(argv[1], atoi(argv[2]));
 	bool onContinue = true;
 
 	printf("Bienvenue sur votre banque !\n");
@@ -61,7 +115,7 @@ int main(int argc, char **argv)
 			p = strtok(NULL, d);
 			i++;
 		}
-		/* fin de traitement */ 
+		/* fin de traitement */
 
 		if (msg[0] == '+')
 		{
@@ -69,21 +123,25 @@ int main(int argc, char **argv)
 			virement.compteSource = atoi(argv[3]);
 			virement.compteDestination = atoi(phr[1]);
 			virement.montant = atoi(phr[2]);
-			
+
 			int sockfd = initSocketClient(argv[1], atoi(argv[2]));
 			send(sockfd, &virement, sizeof(Virement), 0);
 			sclose(sockfd);
-		} else if(msg[0] == '*') {
-			
+		}
+		else if (msg[0] == '*')
+		{
+			/*
 			MessagePipe msgpipe;
 			msgpipe.type = 1;
 			msgpipe.virement.compteDestination = atoi(phr[1]);
 			msgpipe.virement.montant = atoi(phr[2]);
 			swrite(sockfd, &msgpipe, sizeof(MessagePipe));
-
-		} else if(msg[0] == 'q') {
+			*/
+		}
+		else if (msg[0] == 'q')
+		{
 			onContinue = false;
-			sclose(sockfd);
+			// sclose(sockfd);
 			printf("\nVous êtes déconnecté! \n");
 			break;
 		}
@@ -104,6 +162,6 @@ int main(int argc, char **argv)
 		printf("\n");
 	}
 
-	//sclose(sockfd);
+	// sclose(sockfd);
 	return 0;
 }
