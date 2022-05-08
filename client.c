@@ -34,7 +34,7 @@ int main(int argc, char **argv)
 	}
 
 	// initClient before read keyboard ... not a good idea
-	int sockfd = initSocketClient(argv[1], atoi(argv[2]));
+	//int sockfd = initSocketClient(argv[1], atoi(argv[2]));
 	bool onContinue = true;
 
 	printf("Bienvenue votre banque !\n");
@@ -60,14 +60,17 @@ int main(int argc, char **argv)
 			p = strtok(NULL, d);
 			i++;
 		}
-		/* fin de traitement */
+		/* fin de traitement */ 
 
 		if(msg[0] == '+') {
 			Virement virement;
 			virement.compteSource = atoi(argv[3]);
 			virement.compteDestination = atoi(phr[1]);
 			virement.montant = atoi(phr[2]);
+			
+			int sockfd = initSocketClient(argv[1], atoi(argv[2]));
 			send(sockfd, &virement, sizeof(Virement), 0);
+			sclose(sockfd);
 		} else if(msg[0] == '*') {
 
 		} else if(msg[0] == 'q') {
@@ -90,6 +93,6 @@ int main(int argc, char **argv)
 		printf("\n");	
 	}
 
-	sclose(sockfd);
+	//sclose(sockfd);
 	return 0;
 }
