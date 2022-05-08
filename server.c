@@ -38,7 +38,7 @@ int main(int argc, char **argv)
 	int nbSockfd = 0;
 	int i;
 	// char msg[MESSAGE_SIZE];
-	Virement virement;
+	// Virement virement;
 
 	srand(time(NULL));
 
@@ -78,22 +78,39 @@ int main(int argc, char **argv)
 		{
 			if (fds[i].revents & POLLIN & !fds_invalid[i])
 			{
-				recv(fds[i].fd, &virement, sizeof(Virement), 0);
-				printf("Virement de %d euro du compte %d vers le compte %d\n", virement.montant, virement.compteSource, virement.compteDestination);
+				int tailleLogique;
+				recv(fds[i].fd, &tailleLogique, sizeof(int), 0);
 
+				Virement *vList = (Virement *)malloc(sizeof(Virement) * 10);
+
+				if (vList == NULL)
+				{
+					perror("Out of memory\n");
+					exit(EXIT_FAILURE);
+				}
+				recv(fds[i].fd, vList, sizeof(Virement), 0);
+
+				// tout recup
 				int idShm = sshmget(SHM_KEY, 1000 * sizeof(int), 0);
 				int *tab = sshmat(idShm);
 				int semId = sem_get(SEM_KEY, 1);
 
-				sem_down0(semId);
-				// debut zone critique
-				tab[virement.compteSource] -= virement.montant;
-				printf("Nouveau solde du compte %d : %d\n", virement.compteSource, tab[virement.compteSource]);
-				tab[virement.compteDestination] += virement.montant;
-				printf("Nouveau solde du compte %d : %d\n", virement.compteDestination, tab[virement.compteDestination]);
-				printf("\n");
-				// fin zone critique
-				sem_up0(semId);
+				for (int i = 0; i < tailleLogique; i++)
+				{
+					Virement virement = vList[i];
+
+					printf("Virement de %d euro du compte %d vers le compte %d\n", virement.montant, virement.compteSource, virement.compteDestination);
+
+					sem_down0(semId);
+					// debut zone critique
+					tab[virement.compteSource] -= virement.montant;
+					printf("Nouveau solde du compte %d : %d\n", virement.compteSource, tab[virement.compteSource]);
+					tab[virement.compteDestination] += virement.montant;
+					printf("Nouveau solde du compte %d : %d\n", virement.compteDestination, tab[virement.compteDestination]);
+					printf("\n");
+					// fin zone critique
+					sem_up0(semId);
+				}
 
 				sshmdt(tab);
 

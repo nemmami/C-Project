@@ -1,13 +1,15 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
 #include <sys/socket.h>
-#include <string.h>
 #include <time.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <termios.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #include "utils_v1.h"
 #include "message.h"
@@ -34,132 +36,152 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	// gerer pipe et enfants
-	int fd[2]; // fd[0] == READ, fd[1] WRITE
-	spipe(fd);
-	pid_t filsID1 = sfork(); // fils 1 minuterie
-
 	// creer la liste des virement pour les virement recurent
 	int tailleLogique = 0;
 	Virement *vList = (Virement *)malloc(sizeof(Virement) * 10);
-
 	if (vList == NULL)
 	{
 		perror("Out of memory\n");
 		exit(EXIT_FAILURE);
 	}
 
+	// gerer pipe et enfants
+	pid_t filsID1, filsID2;
+	int fd[2]; // fd[0] == READ, fd[1] WRITE
+	spipe(fd);
+	filsID1 = fork(); // fils 1 minuterie
+	printf("filsID1: %d ", filsID1);
+
 	if (filsID1 == 0) // minuterie
 	{
+		printf("2");
 		// cloture du descripteur de lecture, peut plus lire dans le pipe
 		sclose(fd[0]);
 		MessagePipe msgpipe;
 		msgpipe.type = 0;
-		while (TRUE)
+		while (1)
 		{
 			// le delay
-			sleep(atoi(argv[4]))
-				swrite(fd[1], &msgpipe, sizeof(MessagePipe));
+			int delay = atoi(argv[4]);
+			printf("%d", delay);
+			sleep(delay);
+			swrite(fd[1], &msgpipe, sizeof(MessagePipe));
 		}
 	}
 	else // virement recurent
 	{
-		pid_t filsID2 = sfork();
+		filsID2 = fork();
+		printf("filsID2: %d ", filsID2);
 		if (filsID2 == 0)
 		{
 			// cloture du descripteur d'écritue, peut plus ecrire dans le pipe
 			sclose(fd[1]);
-			while (TRUE)
+
+			while (1)
 			{
 				MessagePipe msgpipe;
-				int a = sread(fd[1], &msgpipe, sizeof(MessagePipe));
+				sread(fd[0], &msgpipe, sizeof(MessagePipe));
 
 				if (msgpipe.type) // type et 1 sa continue
 				{
 					// ajouter les virement dans la liste
-					Virement *v = &vList[*tailleLogique];
+					Virement *v = &vList[tailleLogique];
 					v->compteSource = atoi(argv[3]);
 					v->compteDestination = msgpipe.virement.compteDestination;
 					v->montant = msgpipe.virement.montant;
-					(*tailleLogique)++;
+					(tailleLogique)++;
+				}
+				else // msgpipe.type = 0
+				{
+					if (tailleLogique != 0)
+					{
+						int sockfd = initSocketClient(argv[1], atoi(argv[2]));
+						send(sockfd, &tailleLogique, sizeof(int), 0);
+						send(sockfd, vList, sizeof(Virement), 0);
+					}
 				}
 			}
 		}
-	}
-
-	// initClient before read keyboard ... not a good idea
-	// int sockfd = initSocketClient(argv[1], atoi(argv[2]));
-	bool onContinue = true;
-
-	printf("Bienvenue sur votre banque !\n");
-	printf("\n");
-	while (onContinue)
-	{
-		printf("Veuillez entrez une de ces 3 commandes : \n");
-		printf("\tEffectuer un virement : + n2 somme\n");
-		printf("\tAjouter un nouveau virement réccurent :  * n2 somme\n");
-		printf("\tQuitter votre espace client :  q\n");
-
-		char msg[MESSAGE_SIZE];
-		sread(0, msg, 256);
-
-		/* on sépare chacunes des données de la commande */
-		char *phr[3]; // phr[0] == +/*  phr[1] == n2  phr[2] == somme
-		int i = 0;
-		char d[] = " ";
-		char *p = strtok(msg, d);
-		while (p != NULL)
+		else // le daron, pere
 		{
-			phr[i] = p;
-			printf("'%s'\n", p);
-			p = strtok(NULL, d);
-			i++;
-		}
-		/* fin de traitement */
+			// initClient before read keyboard ... not a good idea
+			// int sockfd = initSocketClient(argv[1], atoi(argv[2]));
+			bool onContinue = true;
 
-		if (msg[0] == '+')
-		{
-			Virement virement;
-			virement.compteSource = atoi(argv[3]);
-			virement.compteDestination = atoi(phr[1]);
-			virement.montant = atoi(phr[2]);
+			printf("Bienvenue sur votre banque !\n");
+			printf("\n");
+			while (onContinue)
+			{
+				printf("Veuillez entrez une de ces 3 commandes : \n");
+				printf("\tEffectuer un virement : + n2 somme\n");
+				printf("\tAjouter un nouveau virement réccurent :  * n2 somme\n");
+				printf("\tQuitter votre espace client :  q\n");
 
-			int sockfd = initSocketClient(argv[1], atoi(argv[2]));
-			send(sockfd, &virement, sizeof(Virement), 0);
-			sclose(sockfd);
-		}
-		else if (msg[0] == '*')
-		{
-			/*
-			MessagePipe msgpipe;
-			msgpipe.type = 1;
-			msgpipe.virement.compteDestination = atoi(phr[1]);
-			msgpipe.virement.montant = atoi(phr[2]);
-			swrite(sockfd, &msgpipe, sizeof(MessagePipe));
-			*/
-		}
-		else if (msg[0] == 'q')
-		{
-			onContinue = false;
-			// sclose(sockfd);
-			printf("\nVous êtes déconnecté! \n");
-			break;
-		}
-		else
-		{
-			printf("tu t'es trompé akhi");
-		}
+				char msg[MESSAGE_SIZE];
+				sread(0, msg, 256);
 
-		// swrite(sockfd, msg, sizeof(msg));
+				/* on sépare chacunes des données de la commande */
+				char *phr[3]; // phr[0] == +/*  phr[1] == n2  phr[2] == somme
+				int i = 0;
+				char d[] = " ";
+				char *p = strtok(msg, d);
+				while (p != NULL)
+				{
+					phr[i] = p;
+					// printf("'%s'\n", p);
+					p = strtok(NULL, d);
+					i++;
+				}
+				/* fin de traitement */
 
-		/* wait server response */
-		/*
-		sread(sockfd, msg, sizeof(msg));
+				printf("filsID1: %d ", filsID1);
+				if (msg[0] == '+')
+				{
+					printf("msg 0: + ");
+					Virement virement;
+					virement.compteSource = atoi(argv[3]);
+					virement.compteDestination = atoi(phr[1]);
+					virement.montant = atoi(phr[2]);
+					int tailleLogique = 1;
+					int sockfd = initSocketClient(argv[1], atoi(argv[2]));
+					send(sockfd, &tailleLogique, sizeof(int), 0);
+					send(sockfd, &virement, sizeof(Virement), 0);
+					sclose(sockfd);
+				}
+				else if (msg[0] == '*')
+				{
+					printf("wewe ici mon gars");
+					sclose(fd[0]);
+					MessagePipe msgpipe;
+					msgpipe.type = 1;
+					msgpipe.virement.compteDestination = atoi(phr[1]);
+					msgpipe.virement.montant = atoi(phr[2]);
+					swrite(fd[1], &msgpipe, sizeof(MessagePipe));
+				}
+				else if (msg[0] == 'q')
+				{
+					onContinue = false;
+					// sclose(sockfd);
+					printf("\nVous êtes déconnecté! \n");
+					break;
+				}
+				else
+				{
+					printf("tu t'es trompé akhi");
+				}
 
-		printf("Réponse du serveur : \n");
-		printf("%s\n", msg);
-		*/
-		printf("\n");
+				// swrite(sockfd, msg, sizeof(msg));
+
+				/* wait server response */
+				/*
+				sread(sockfd, msg, sizeof(msg));
+
+				printf("Réponse du serveur : \n");
+				printf("%s\n", msg);
+				*/
+				printf("\n");
+			}
+		}
 	}
 
 	// sclose(sockfd);
