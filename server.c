@@ -37,10 +37,11 @@ int main(int argc, char **argv)
 	bool fds_invalid[1024];
 	int nbSockfd = 0;
 	int i;
+	Virement *vList;
 	// char msg[MESSAGE_SIZE];
 	// Virement virement;
 
-	srand(time(NULL));
+	// srand(time(NULL));
 
 	if (argc != 2)
 	{
@@ -77,19 +78,24 @@ int main(int argc, char **argv)
 		// trt messages clients
 		for (i = 1; i < nbSockfd; i++)
 		{
-			if (fds[i].revents & POLLIN & !fds_invalid[i])
+			if (fds[i].revents & POLLIN && !fds_invalid[i])
 			{
 				int tailleLogique;
-				recv(fds[i].fd, &tailleLogique, sizeof(int), 0); // on recoit la taille
+				sread(fds[i].fd, &tailleLogique, sizeof(int)); // on recoit la taille
 
-				Virement *vList = (Virement *)malloc(sizeof(Virement) * tailleLogique);
+				vList = (Virement *)malloc(sizeof(Virement) * tailleLogique);
 				if (vList == NULL)
 				{
 					perror("Out of memory\n");
 					exit(EXIT_FAILURE);
 				}
+				
+					sread(fds[i].fd, vList, sizeof(Virement));
 
-				recv(fds[i].fd, vList, sizeof(Virement), 0); // on recoit le tableau
+				for (int i = 0; i < tailleLogique; i++)
+				{
+					printf(" montant %d: %d \n", i, vList[i].montant);
+				}
 
 				// tout recup
 				int idShm = sshmget(SHM_KEY, 1000 * sizeof(int), 0);
