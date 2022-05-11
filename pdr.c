@@ -27,7 +27,7 @@ int main(int argc, char **argv)
 
     if (numClient > 1000 || numClient < 0)
     {
-        printf("NumÃ©ro de client inexistant");
+        printf("Numero de client inexistant");
         exit(1);
     }
 

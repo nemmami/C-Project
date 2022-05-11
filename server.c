@@ -51,6 +51,7 @@ int main(int argc, char **argv)
 	// addr_size = sizeof(struct sockaddr_in);
 	sockfd = initSocketServer(atoi(argv[1]));
 	printf("Le serveur est à l'écoute sur le port : %i \n", atoi(argv[1]));
+	printf("\n");
 
 	fds[nbSockfd].fd = sockfd;
 	fds[nbSockfd].events = POLLIN;
@@ -79,16 +80,16 @@ int main(int argc, char **argv)
 			if (fds[i].revents & POLLIN & !fds_invalid[i])
 			{
 				int tailleLogique;
-				recv(fds[i].fd, &tailleLogique, sizeof(int), 0);
+				recv(fds[i].fd, &tailleLogique, sizeof(int), 0); // on recoit la taille
 
-				Virement *vList = (Virement *)malloc(sizeof(Virement) * 10);
-
+				Virement *vList = (Virement *)malloc(sizeof(Virement) * tailleLogique);
 				if (vList == NULL)
 				{
 					perror("Out of memory\n");
 					exit(EXIT_FAILURE);
 				}
-				recv(fds[i].fd, vList, sizeof(Virement), 0);
+
+				recv(fds[i].fd, vList, sizeof(Virement), 0); // on recoit le tableau
 
 				// tout recup
 				int idShm = sshmget(SHM_KEY, 1000 * sizeof(int), 0);
