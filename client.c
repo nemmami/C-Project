@@ -54,7 +54,7 @@ int main(int argc, char **argv)
 
 	if (filsID1 == 0) // minuterie
 	{
-		printf("2");
+		printf(" 1 ");
 		// cloture du descripteur de lecture, peut plus lire dans le pipe
 		sclose(fd[0]);
 		MessagePipe msgpipe;
@@ -74,6 +74,7 @@ int main(int argc, char **argv)
 		printf("filsID2: %d ", filsID2);
 		if (filsID2 == 0)
 		{
+			printf(" 1 ");
 			// cloture du descripteur d'écritue, peut plus ecrire dans le pipe
 			sclose(fd[1]);
 
