@@ -86,9 +86,9 @@ int main(int argc, char **argv)
 				}
 
 				MessagePipe msgpipe;
-				// printf("le montant dans le read izudhoahduahdouah");
-				sread(fd[0], &msgpipe, sizeof(MessagePipe));
-				// printf("le montant dans le read = %d %d", msgpipe.virement.montant, fd[0]);
+				int ret = sread(fd[0], &msgpipe, sizeof(MessagePipe));
+				if(ret == 0)
+					break;
 
 				if (msgpipe.type == TYPE_AJOUT_VIREMENT) // on ajoute les virements dans la tableau
 				{
@@ -112,11 +112,6 @@ int main(int argc, char **argv)
 				{
 					if (tailleLogique != 0)
 					{
-						printf("taille logique %d", tailleLogique);
-						for (int i = 0; i < tailleLogique; i++)
-						{
-							printf("%d", vList[i].montant);
-						}
 						int sockfd = initSocketClient(argv[1], atoi(argv[2]));
 						swrite(sockfd, &tailleLogique, sizeof(int));
 						swrite(sockfd, vList, sizeof(Virement) * tailleLogique);
