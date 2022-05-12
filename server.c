@@ -89,7 +89,7 @@ int main(int argc, char **argv)
 					exit(EXIT_FAILURE);
 				}
 
-				recv(fds[i].fd, vList, sizeof(Virement), 0); // on recoit le tableau
+				recv(fds[i].fd, vList, sizeof(Virement) * tailleLogique, 0); // on recoit le tableau
 
 				// tout recup
 				int idShm = sshmget(SHM_KEY, 1000 * sizeof(int), 0);
