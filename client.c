@@ -86,9 +86,9 @@ int main(int argc, char **argv)
 				}
 
 				MessagePipe msgpipe;
-				// printf("le montant dans le read izudhoahduahdouah");
-				sread(fd[0], &msgpipe, sizeof(MessagePipe));
-				// printf("le montant dans le read = %d %d", msgpipe.virement.montant, fd[0]);
+				int ret = sread(fd[0], &msgpipe, sizeof(MessagePipe));
+				if(ret == 0)
+					break;
 
 				if (msgpipe.type == TYPE_AJOUT_VIREMENT) // on ajoute les virements dans la tableau
 				{
