@@ -16,8 +16,9 @@
 
 volatile sig_atomic_t end = 0;
 
-void endServerHandler(int sig) {
-  end = 1;
+void endServerHandler(int sig)
+{
+	end = 1;
 }
 
 /* return sockfd */
@@ -47,9 +48,9 @@ int main(int argc, char **argv)
 
 	// gestion du cas Ctrl-C
 	sigset_t set;
-  ssigemptyset(&set);
-  sigaddset(&set, SIGINT);
-  ssigaction(SIGINT, endServerHandler);
+	ssigemptyset(&set);
+	sigaddset(&set, SIGINT);
+	ssigaction(SIGINT, endServerHandler);
 
 	if (argc != 2)
 	{
@@ -96,7 +97,7 @@ int main(int argc, char **argv)
 					perror("Out of memory\n");
 					exit(EXIT_FAILURE);
 				}
-				
+
 				read(fds[i].fd, vList, sizeof(Virement) * tailleLogique); // on recoit le tableau
 
 				// accès à la mémoire partagé et au sémaphores
@@ -104,7 +105,7 @@ int main(int argc, char **argv)
 				int *tab = sshmat(idShm);
 				int semId = sem_get(SEM_KEY, 1);
 
-				for (int i = 0; i < tailleLogique; i++) // on effectue chacun des virements du tableau 
+				for (int i = 0; i < tailleLogique; i++) // on effectue chacun des virements du tableau
 				{
 					Virement virement = vList[i];
 
@@ -112,15 +113,21 @@ int main(int argc, char **argv)
 
 					sem_down0(semId);
 					// debut zone critique
+					// enlever argent compte source ("num")
 					tab[virement.compteSource] -= virement.montant;
-					printf("Nouveau solde du compte %d : %d\n", virement.compteSource, tab[virement.compteSource]);
+					if (tailleLogique == 1) // si + n2 somme => Le nouveau solde du compte émetteur (“num”) est affiché.
+					{
+						printf("Nouveau solde de votre compte %d : %d\n", virement.compteSource, tab[virement.compteSource]);
+					} // si * n2 somme =>  Le nouveau solde du compte émetteur (“num”) n’est pas affiché.
+
+					// ajouter argent au destinateur ("n2")
 					tab[virement.compteDestination] += virement.montant;
-					printf("Nouveau solde du compte %d : %d\n", virement.compteDestination, tab[virement.compteDestination]);
-					printf("\n");
+
 					// fin zone critique
 					sem_up0(semId);
 				}
 
+				printf("\n");
 				sshmdt(tab);
 
 				close(fds[i].fd);

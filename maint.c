@@ -36,7 +36,7 @@ int main(int argc, char **argv)
     }
     else if (type == 2)
     {
-        printf("Destroying IPCs...\n");
+        printf("Destroying IPCs\n");
         // get identifiant de la memoire partagé
         int shm_id = sshmget(SHM_KEY, 1000 * sizeof(int), 0);
         // get id du sem

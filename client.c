@@ -32,7 +32,7 @@ int main(int argc, char **argv)
 {
 	if (argc != 5)
 	{
-		printf("%s\n", "Usage argv[0] ServerIP ServerPort Num Delay, en gros d abord 127.0.0.1, ensuite 9500, ensuite NumCompte et ensuite le delay si t'en a envie mon reuf");
+		printf("%s\n", "Usage argv[0] ServerIP ServerPort Num Delay");
 		exit(1);
 	}
 
@@ -117,7 +117,7 @@ int main(int argc, char **argv)
 		else // le pere
 		{
 			bool onContinue = true;
-			
+
 			printf("Bienvenue sur votre banque !\n");
 			printf("\n");
 
@@ -143,14 +143,18 @@ int main(int argc, char **argv)
 					i++;
 				}
 				/* fin de traitement */
-				
+
+				int compteSource = atoi(argv[3]);
+				int compteDestination = atoi(phr[1]);
+				int montant = atoi(phr[2]);
+
 				if (msg[0] == '+') // cas +
 				{
 					// printf("msg 0: + ");
 					Virement virement;
-					virement.compteSource = atoi(argv[3]);
-					virement.compteDestination = atoi(phr[1]);
-					virement.montant = atoi(phr[2]);
+					virement.compteSource = compteSource;
+					virement.compteDestination = compteDestination;
+					virement.montant = montant;
 					int tailleLogique = 1;
 					int sockfd = initSocketClient(argv[1], atoi(argv[2]));
 					swrite(sockfd, &tailleLogique, sizeof(int));
@@ -162,9 +166,9 @@ int main(int argc, char **argv)
 					// sclose(fd[0]);
 					MessagePipe msgpipe;
 					msgpipe.type = TYPE_AJOUT_VIREMENT;
-					msgpipe.virement.compteSource = atoi(argv[3]);
-					msgpipe.virement.compteDestination = atoi(phr[1]);
-					msgpipe.virement.montant = atoi(phr[2]);
+					msgpipe.virement.compteSource = compteSource;
+					msgpipe.virement.compteDestination = compteDestination;
+					msgpipe.virement.montant = montant;
 					swrite(fd[1], &msgpipe, sizeof(MessagePipe));
 				}
 				else if (msg[0] == 'q') // cas q
