@@ -112,11 +112,6 @@ int main(int argc, char **argv)
 				{
 					if (tailleLogique != 0)
 					{
-						printf("taille logique %d", tailleLogique);
-						for (int i = 0; i < tailleLogique; i++)
-						{
-							printf("%d", vList[i].montant);
-						}
 						int sockfd = initSocketClient(argv[1], atoi(argv[2]));
 						swrite(sockfd, &tailleLogique, sizeof(int));
 						swrite(sockfd, vList, sizeof(Virement) * tailleLogique);
