@@ -186,7 +186,6 @@ int main(int argc, char **argv)
 					printf("\nVous êtes déconnecté! \n");
 					break;
 				}
-
 				printf("\n");
 			}
 		}
