@@ -50,7 +50,7 @@ int main(int argc, char **argv)
 	pid_t filsID1, filsID2;
 	int fd[2]; // fd[0] == READ, fd[1] WRITE
 	spipe(fd);
-	printf("pipe %d %d\n", fd[0], fd[1]);
+	//printf("pipe %d %d\n", fd[0], fd[1]);
 
 	filsID1 = fork(); // fils 1 minuterie
 
