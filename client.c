@@ -183,6 +183,7 @@ int main(int argc, char **argv)
 					onContinue = false;
 					sclose(fd[1]);
 					kill(filsID1, SIGUSR1);
+					//kill(filsID2, SIGUSR1);
 					printf("\nVous êtes déconnecté! \n");
 					break;
 				}
