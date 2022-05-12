@@ -89,8 +89,8 @@ int main(int argc, char **argv)
 					perror("Out of memory\n");
 					exit(EXIT_FAILURE);
 				}
-				
-					sread(fds[i].fd, vList, sizeof(Virement) * tailleLogique); // on recoit le tableau
+
+				sread(fds[i].fd, vList, sizeof(Virement) * tailleLogique); // on recoit le tableau
 
 				for (int i = 0; i < tailleLogique; i++)
 				{

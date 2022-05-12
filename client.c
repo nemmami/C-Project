@@ -91,7 +91,7 @@ int main(int argc, char **argv)
 
 					if (tailleLogique == taillePhysique)
 					{
-						
+
 						taillePhysique *= 2;
 						if ((vList = (Virement *)realloc(vList, sizeof(Virement) * (taillePhysique))) == NULL)
 						{
@@ -186,9 +186,11 @@ int main(int argc, char **argv)
 				else if (msg[0] == 'q') // fermer tout les pipes, fils, socket, ...
 				{
 					onContinue = false;
-					// sclose(fd[1]);
-					// sclose(sockfd);
-					// kill(filsID1);
+					sclose(fd[1]);
+
+					skill(filsID1, SIGQUIT);
+					skill(filsID2, SIGQUIT);
+
 					printf("\nVous êtes déconnecté! \n");
 					break;
 				}
