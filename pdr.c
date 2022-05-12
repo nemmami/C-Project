@@ -18,7 +18,7 @@ int main(int argc, char **argv)
 {
     if (argc != 3)
     {
-        printf("%s\n", "Usage argv[0] numeroCompte montant");
+        printf("%s\n", "Usage ./pdr numeroCompte montant");
         exit(1);
     }
 
@@ -31,9 +31,9 @@ int main(int argc, char **argv)
         exit(1);
     }
 
+    // accès à la mémoire partagé et au sémaphores
     int id = sshmget(SHM_KEY, 1000 * sizeof(int), 0);
     int *tab = sshmat(id);
-
     int semId = sem_get(SEM_KEY, 1);
 
     sem_down0(semId);
@@ -44,8 +44,6 @@ int main(int argc, char **argv)
     sem_up0(semId);
 
     sshmdt(tab);
-
-    // sshmdelete(id);
 
     exit(EXIT_SUCCESS);
 }

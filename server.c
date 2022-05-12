@@ -38,42 +38,35 @@ int initSocketServer(int port)
 int main(int argc, char **argv)
 {
 	int sockfd, newsockfd;
-	// struct sockaddr_in addr;
 	/* 1024 client connections MAX */
 	struct pollfd fds[1024];
 	bool fds_invalid[1024];
 	int nbSockfd = 0;
 	int i;
 	Virement *vList;
-	// char msg[MESSAGE_SIZE];
-	// Virement virement;
 
-	// srand(time(NULL));
-
+	// gestion du cas Ctrl-C
 	sigset_t set;
-  	ssigemptyset(&set);
-  	sigaddset(&set, SIGINT);
-  	ssigprocmask(SIG_BLOCK, &set, NULL);
-  	ssigaction(SIGINT, endServerHandler);
+  ssigemptyset(&set);
+  sigaddset(&set, SIGINT);
+  ssigaction(SIGINT, endServerHandler);
 
 	if (argc != 2)
 	{
-		printf("%s\n", "Usage argv[0] ServerPort");
+		printf("%s\n", "Usage ./server ServerPort");
 		exit(1);
 	}
 
-	// addr_size = sizeof(struct sockaddr_in);
 	sockfd = initSocketServer(atoi(argv[1]));
 	printf("Le serveur est à l'écoute sur le port : %i \n", atoi(argv[1]));
 	printf("\n");
-	ssigprocmask(SIG_UNBLOCK, &set, NULL);
 
 	fds[nbSockfd].fd = sockfd;
 	fds[nbSockfd].events = POLLIN;
 	nbSockfd++;
 	fds_invalid[nbSockfd] = false;
 
-	while (!end)
+	while (!end) // tant qu'on a pas effectuer de Ctrl-C
 	{
 		spoll(fds, nbSockfd, 0);
 
@@ -95,7 +88,7 @@ int main(int argc, char **argv)
 			if (fds[i].revents & POLLIN && !fds_invalid[i])
 			{
 				int tailleLogique;
-				read(fds[i].fd, &tailleLogique, sizeof(int)); // on recoit la taille, sread problematique avec le handler
+				read(fds[i].fd, &tailleLogique, sizeof(int)); // on recoit la taille, sread pourrait poser probleme avec le handler
 
 				vList = (Virement *)malloc(sizeof(Virement) * tailleLogique);
 				if (vList == NULL)
@@ -106,12 +99,12 @@ int main(int argc, char **argv)
 				
 				read(fds[i].fd, vList, sizeof(Virement) * tailleLogique); // on recoit le tableau
 
-				// tout recup
+				// accès à la mémoire partagé et au sémaphores
 				int idShm = sshmget(SHM_KEY, 1000 * sizeof(int), 0);
 				int *tab = sshmat(idShm);
 				int semId = sem_get(SEM_KEY, 1);
 
-				for (int i = 0; i < tailleLogique; i++)
+				for (int i = 0; i < tailleLogique; i++) // on effectue chacun des virements du tableau 
 				{
 					Virement virement = vList[i];
 

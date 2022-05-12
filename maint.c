@@ -18,7 +18,7 @@ int main(int argc, char **argv)
 {
     if (argc != 2 && argc != 3)
     {
-        printf("Usage argv[0] type (opt)");
+        printf("Usage ./maint type (opt)");
         exit(1);
     }
 
@@ -55,10 +55,11 @@ int main(int argc, char **argv)
             printf("La duree n'est pas donnée");
             exit(1);
         }
+
         int opt = atoi(argv[2]);
         int sem_id = sem_get(SEM_KEY, 1);
 
-        sem_down0(sem_id);
+        sem_down0(sem_id); // on garde un accès exclusif à la mémoire partagée pour "opt" secondes
         sleep(opt);
         sem_up0(sem_id);
     }
