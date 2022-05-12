@@ -90,7 +90,7 @@ int main(int argc, char **argv)
 					exit(EXIT_FAILURE);
 				}
 				
-					sread(fds[i].fd, vList, sizeof(Virement));
+					sread(fds[i].fd, vList, sizeof(Virement) * tailleLogique); // on recoit le tableau
 
 				for (int i = 0; i < tailleLogique; i++)
 				{

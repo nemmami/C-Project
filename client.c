@@ -117,7 +117,7 @@ int main(int argc, char **argv)
 						}
 						int sockfd = initSocketClient(argv[1], atoi(argv[2]));
 						swrite(sockfd, &tailleLogique, sizeof(int));
-						swrite(sockfd, vList, sizeof(Virement));
+						swrite(sockfd, vList, sizeof(Virement) * tailleLogique);
 						sclose(sockfd);
 					}
 				}
