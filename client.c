@@ -75,10 +75,15 @@ int main(int argc, char **argv)
 		// printf("filsID2: %d ", filsID2);
 		if (filsID2 == 0)
 		{
-			// sclose(fd[1]); // cloture du descripteur d'écritue, peut plus ecrire dans le pipe
+			sclose(fd[1]); // cloture du descripteur d'écritue, peut plus ecrire dans le pipe
 
 			while (1)
 			{
+				if(tailleLogique == taillePhysique) // si plus de place dans le tableau
+				{
+					taillePhysique *= 2;
+					vList = realloc(vList, taillePhysique * sizeof(Virement));
+				}
 
 				MessagePipe msgpipe;
 				// printf("le montant dans le read izudhoahduahdouah");
@@ -87,11 +92,8 @@ int main(int argc, char **argv)
 
 				if (msgpipe.type == TYPE_AJOUT_VIREMENT) // on ajoute les virements dans la tableau
 				{
-					printf("OUIIIIIIIIIIIIIIIII ");
-
 					if (tailleLogique == taillePhysique)
 					{
-
 						taillePhysique *= 2;
 						if ((vList = (Virement *)realloc(vList, sizeof(Virement) * (taillePhysique))) == NULL)
 						{
@@ -173,28 +175,22 @@ int main(int argc, char **argv)
 				}
 				else if (msg[0] == '*')
 				{
-					// printf("ici tout va bien en haut du close\n");
-					// printf("ici tout va bien en bas du close\n");
+					//sclose(fd[0]);
 					MessagePipe msgpipe;
 					msgpipe.type = TYPE_AJOUT_VIREMENT;
 					msgpipe.virement.compteSource = atoi(argv[3]);
 					msgpipe.virement.compteDestination = atoi(phr[1]);
 					msgpipe.virement.montant = atoi(phr[2]);
-					// printf("le montant dans le write = %d", msgpipe.virement.montant);
 					swrite(fd[1], &msgpipe, sizeof(MessagePipe));
 				}
 				else if (msg[0] == 'q') // fermer tout les pipes, fils, socket, ...
 				{
 					onContinue = false;
 					sclose(fd[1]);
-
-					skill(filsID1, SIGQUIT);
-					skill(filsID2, SIGQUIT);
-
+					kill(filsID1, SIGUSR1);
 					printf("\nVous êtes déconnecté! \n");
 					break;
 				}
-
 				printf("\n");
 			}
 		}

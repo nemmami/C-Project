@@ -9,9 +9,16 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <poll.h>
+#include <signal.h>
 
 #include "utils_v1.h"
 #include "message.h"
+
+volatile sig_atomic_t end = 0;
+
+void endServerHandler(int sig) {
+  end = 1;
+}
 
 /* return sockfd */
 int initSocketServer(int port)
@@ -43,6 +50,12 @@ int main(int argc, char **argv)
 
 	// srand(time(NULL));
 
+	sigset_t set;
+  	ssigemptyset(&set);
+  	sigaddset(&set, SIGINT);
+  	ssigprocmask(SIG_BLOCK, &set, NULL);
+  	ssigaction(SIGINT, endServerHandler);
+
 	if (argc != 2)
 	{
 		printf("%s\n", "Usage argv[0] ServerPort");
@@ -53,13 +66,14 @@ int main(int argc, char **argv)
 	sockfd = initSocketServer(atoi(argv[1]));
 	printf("Le serveur est à l'écoute sur le port : %i \n", atoi(argv[1]));
 	printf("\n");
+	ssigprocmask(SIG_UNBLOCK, &set, NULL);
 
 	fds[nbSockfd].fd = sockfd;
 	fds[nbSockfd].events = POLLIN;
 	nbSockfd++;
 	fds_invalid[nbSockfd] = false;
 
-	while (1)
+	while (!end)
 	{
 		spoll(fds, nbSockfd, 0);
 
@@ -81,7 +95,7 @@ int main(int argc, char **argv)
 			if (fds[i].revents & POLLIN && !fds_invalid[i])
 			{
 				int tailleLogique;
-				sread(fds[i].fd, &tailleLogique, sizeof(int)); // on recoit la taille
+				read(fds[i].fd, &tailleLogique, sizeof(int)); // on recoit la taille, sread problematique avec le handler
 
 				vList = (Virement *)malloc(sizeof(Virement) * tailleLogique);
 				if (vList == NULL)
@@ -89,13 +103,8 @@ int main(int argc, char **argv)
 					perror("Out of memory\n");
 					exit(EXIT_FAILURE);
 				}
-
-				sread(fds[i].fd, vList, sizeof(Virement) * tailleLogique); // on recoit le tableau
-
-				for (int i = 0; i < tailleLogique; i++)
-				{
-					printf(" montant %d: %d \n", i, vList[i].montant);
-				}
+				
+				read(fds[i].fd, vList, sizeof(Virement) * tailleLogique); // on recoit le tableau
 
 				// tout recup
 				int idShm = sshmget(SHM_KEY, 1000 * sizeof(int), 0);
@@ -121,7 +130,7 @@ int main(int argc, char **argv)
 
 				sshmdt(tab);
 
-				sclose(fds[i].fd);
+				close(fds[i].fd);
 				fds_invalid[i] = true;
 			}
 		}
