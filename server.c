@@ -9,9 +9,16 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <poll.h>
+#include <signal.h>
 
 #include "utils_v1.h"
 #include "message.h"
+
+volatile sig_atomic_t end = 0;
+
+void endServerHandler(int sig) {
+  end = 1;
+}
 
 /* return sockfd */
 int initSocketServer(int port)
@@ -37,10 +44,17 @@ int main(int argc, char **argv)
 	bool fds_invalid[1024];
 	int nbSockfd = 0;
 	int i;
+	Virement *vList;
 	// char msg[MESSAGE_SIZE];
 	// Virement virement;
 
-	srand(time(NULL));
+	// srand(time(NULL));
+
+	sigset_t set;
+  	ssigemptyset(&set);
+  	sigaddset(&set, SIGINT);
+  	ssigprocmask(SIG_BLOCK, &set, NULL);
+  	ssigaction(SIGINT, endServerHandler);
 
 	if (argc != 2)
 	{
@@ -52,13 +66,14 @@ int main(int argc, char **argv)
 	sockfd = initSocketServer(atoi(argv[1]));
 	printf("Le serveur est à l'écoute sur le port : %i \n", atoi(argv[1]));
 	printf("\n");
+	ssigprocmask(SIG_UNBLOCK, &set, NULL);
 
 	fds[nbSockfd].fd = sockfd;
 	fds[nbSockfd].events = POLLIN;
 	nbSockfd++;
 	fds_invalid[nbSockfd] = false;
 
-	while (1)
+	while (!end)
 	{
 		spoll(fds, nbSockfd, 0);
 
@@ -77,19 +92,19 @@ int main(int argc, char **argv)
 		// trt messages clients
 		for (i = 1; i < nbSockfd; i++)
 		{
-			if (fds[i].revents & POLLIN & !fds_invalid[i])
+			if (fds[i].revents & POLLIN && !fds_invalid[i])
 			{
 				int tailleLogique;
-				recv(fds[i].fd, &tailleLogique, sizeof(int), 0); // on recoit la taille
+				read(fds[i].fd, &tailleLogique, sizeof(int)); // on recoit la taille, sread problematique avec le handler
 
-				Virement *vList = (Virement *)malloc(sizeof(Virement) * tailleLogique);
+				vList = (Virement *)malloc(sizeof(Virement) * tailleLogique);
 				if (vList == NULL)
 				{
 					perror("Out of memory\n");
 					exit(EXIT_FAILURE);
 				}
-
-				recv(fds[i].fd, vList, sizeof(Virement) * tailleLogique, 0); // on recoit le tableau
+				
+				read(fds[i].fd, vList, sizeof(Virement) * tailleLogique); // on recoit le tableau
 
 				// tout recup
 				int idShm = sshmget(SHM_KEY, 1000 * sizeof(int), 0);
@@ -115,7 +130,7 @@ int main(int argc, char **argv)
 
 				sshmdt(tab);
 
-				sclose(fds[i].fd);
+				close(fds[i].fd);
 				fds_invalid[i] = true;
 			}
 		}
