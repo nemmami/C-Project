@@ -32,14 +32,14 @@ int main(int argc, char **argv)
 {
 	if (argc != 5)
 	{
-		printf("%s\n", "Usage argv[0] ServerIP ServerPort Num Delay");
+		printf("%s\n", "Usage ./client ServerIP ServerPort Num Delay");
 		exit(1);
 	}
 
 	int tailleLogique = 0;
 	int taillePhysique = 10;
 
-	// creer la liste des virement pour les virement recurent
+	// on crée le tableau de virement recurrent
 	Virement *vList = (Virement *)malloc(sizeof(Virement) * taillePhysique);
 	if (vList == NULL)
 	{
@@ -47,46 +47,45 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	// gerer pipe et enfants
+	// on crée les deux fils ainsi que le pipe
 	pid_t filsID1, filsID2;
-	int fd[2]; // fd[0] == READ, fd[1] WRITE
+	int fd[2]; // fd[0] == lecture, fd[1] == écriture
 	spipe(fd);
 
-	filsID1 = fork(); // fils 1 minuterie
+	filsID1 = fork(); // fils 1 : minuterie
 
-	if (filsID1 == 0) // minuterie
+	if (filsID1 == 0)
 	{
-		sclose(fd[0]); // cloture du descripteur de lecture, peut plus lire dans le pipe
+		sclose(fd[0]); // cloture du descripteur de lecture
 		MessagePipe msgpipe;
 		msgpipe.type = TYPE_ENVOI_VIREMENT;
 		while (1)
 		{
-			// le delay
 			int delay = atoi(argv[4]);
 			sleep(delay);
 			swrite(fd[1], &msgpipe, sizeof(MessagePipe)); // on écrit dans le pipe
 		}
 	}
-	else // virement recurent
+	else // fils 2 : virement recurrent
 	{
 		filsID2 = fork();
 
 		if (filsID2 == 0)
 		{
-			sclose(fd[1]); // cloture du descripteur d'écritue, peut plus ecrire dans le pipe
+			sclose(fd[1]); // cloture du descripteur d'écriture
 
 			while (1)
 			{
 				MessagePipe msgpipe;
 				int ret = sread(fd[0], &msgpipe, sizeof(MessagePipe));
-				if (ret == 0)
+				if (ret == 0) // lorsque l'utilisateur entre "q"
 				{
 					break;
 				}
 
-				if (msgpipe.type == TYPE_AJOUT_VIREMENT) // on ajoute les virements dans la tableau
+				if (msgpipe.type == TYPE_AJOUT_VIREMENT) // on ajoute le virement au tableau
 				{
-					if (tailleLogique == taillePhysique) // si plus de place dans le tableau
+					if (tailleLogique == taillePhysique) // cas tableau plein
 					{
 						taillePhysique *= 2;
 						if ((vList = (Virement *)realloc(vList, sizeof(Virement) * (taillePhysique))) == NULL)
@@ -102,19 +101,21 @@ int main(int argc, char **argv)
 					v->montant = msgpipe.virement.montant;
 					(tailleLogique)++;
 				}
-				else // on envoie le tableau au serveur
+				else if(msgpipe.type == TYPE_ENVOI_VIREMENT) // on envoie le tableau au serveur
 				{
 					if (tailleLogique != 0)
 					{
+						bool estRecurrent = true;
 						int sockfd = initSocketClient(argv[1], atoi(argv[2]));
 						swrite(sockfd, &tailleLogique, sizeof(int));
 						swrite(sockfd, vList, sizeof(Virement) * tailleLogique);
+						swrite(sockfd, &estRecurrent, sizeof(bool)); // on previent le serveur qu'il s'agit d'un lot de virements recurrents
 						sclose(sockfd);
 					}
 				}
 			}
 		}
-		else // le pere
+		else // pere
 		{
 			bool onContinue = true;
 
@@ -150,20 +151,20 @@ int main(int argc, char **argv)
 
 				if (msg[0] == '+') // cas +
 				{
-					// printf("msg 0: + ");
 					Virement virement;
 					virement.compteSource = compteSource;
 					virement.compteDestination = compteDestination;
 					virement.montant = montant;
 					int tailleLogique = 1;
+					bool estRecurrent = false;
 					int sockfd = initSocketClient(argv[1], atoi(argv[2]));
 					swrite(sockfd, &tailleLogique, sizeof(int));
 					swrite(sockfd, &virement, sizeof(Virement));
+					swrite(sockfd, &estRecurrent, sizeof(bool)); // on previent le serveur qu'il s'agit d'un virement simple
 					sclose(sockfd);
 				}
 				else if (msg[0] == '*') // cas *
 				{
-					// sclose(fd[0]);
 					MessagePipe msgpipe;
 					msgpipe.type = TYPE_AJOUT_VIREMENT;
 					msgpipe.virement.compteSource = compteSource;
@@ -174,10 +175,9 @@ int main(int argc, char **argv)
 				else if (msg[0] == 'q') // cas q
 				{
 					onContinue = false;
-					sclose(fd[1]);
-					kill(filsID1, SIGUSR1);
+					sclose(fd[1]); // cloture du descripteur d'écriture, on ne peux plus écrire sur le pipe
+					kill(filsID1, SIGUSR1); // on tue notre fils minuterie
 					printf("\nVous êtes déconnecté! \n");
-					break;
 				}
 
 				printf("\n");

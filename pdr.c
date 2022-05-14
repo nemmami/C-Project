@@ -31,7 +31,7 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    // accès à la mémoire partagé et au sémaphores
+    // accès à la mémoire partagé et aux sémaphores
     int id = sshmget(SHM_KEY, 1000 * sizeof(int), 0);
     int *tab = sshmat(id);
     int semId = sem_get(SEM_KEY, 1);
@@ -39,7 +39,7 @@ int main(int argc, char **argv)
     sem_down0(semId);
     // debut zone critique
     tab[numClient] += montant;
-    printf("Nouveau solde du compte %d : %d\n", numClient, tab[numClient]);
+    printf("Nouveau solde du compte %d : %d euro.\n", numClient, tab[numClient]);
     // fin zone critique
     sem_up0(semId);
 

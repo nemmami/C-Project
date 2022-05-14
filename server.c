@@ -46,7 +46,7 @@ int main(int argc, char **argv)
 	int i;
 	Virement *vList;
 
-	// gestion du cas Ctrl-C
+	// gestion du Ctrl-C
 	sigset_t set;
 	ssigemptyset(&set);
 	sigaddset(&set, SIGINT);
@@ -59,7 +59,7 @@ int main(int argc, char **argv)
 	}
 
 	sockfd = initSocketServer(atoi(argv[1]));
-	printf("Le serveur est à l'écoute sur le port : %i \n", atoi(argv[1]));
+	printf("Le serveur est à l'écoute sur le port : %i. \n", atoi(argv[1]));
 	printf("\n");
 
 	fds[nbSockfd].fd = sockfd;
@@ -89,7 +89,7 @@ int main(int argc, char **argv)
 			if (fds[i].revents & POLLIN && !fds_invalid[i])
 			{
 				int tailleLogique;
-				read(fds[i].fd, &tailleLogique, sizeof(int)); // on recoit la taille, sread pourrait poser probleme avec le handler
+				read(fds[i].fd, &tailleLogique, sizeof(int)); // on recoit la taille, sread pourrait poser probleme avec le handler, on utilise alors read
 
 				vList = (Virement *)malloc(sizeof(Virement) * tailleLogique);
 				if (vList == NULL)
@@ -98,9 +98,12 @@ int main(int argc, char **argv)
 					exit(EXIT_FAILURE);
 				}
 
-				read(fds[i].fd, vList, sizeof(Virement) * tailleLogique); // on recoit le tableau
+				read(fds[i].fd, vList, sizeof(Virement) * tailleLogique); // on recoit le tableau, sread pourrait poser probleme avec le handler, on utilise alors read
 
-				// accès à la mémoire partagé et au sémaphores
+				bool estRecurrent;
+				read(fds[i].fd, &estRecurrent, sizeof(bool)); // on est prevenu si il s'agit d'un virement simple ou d'un lot de virements recurrents
+
+				// accès à la mémoire partagé et aux sémaphores
 				int idShm = sshmget(SHM_KEY, 1000 * sizeof(int), 0);
 				int *tab = sshmat(idShm);
 				int semId = sem_get(SEM_KEY, 1);
@@ -109,19 +112,20 @@ int main(int argc, char **argv)
 				{
 					Virement virement = vList[i];
 
-					printf("Virement de %d euro du compte %d vers le compte %d\n", virement.montant, virement.compteSource, virement.compteDestination);
+					printf("Virement de %d euro du compte %d vers le compte %d.\n", virement.montant, virement.compteSource, virement.compteDestination);
 
 					sem_down0(semId);
 					// debut zone critique
-					// enlever argent compte source ("num")
-					tab[virement.compteSource] -= virement.montant;
-					if (tailleLogique == 1) // si + n2 somme => Le nouveau solde du compte émetteur (“num”) est affiché.
+
+					tab[virement.compteSource] -= virement.montant; // on debite le compte source ("num")
+
+					if (!estRecurrent) // si + n2 somme => Le nouveau solde du compte émetteur (“num”) est affiché.
 					{
-						printf("Nouveau solde de votre compte %d : %d\n", virement.compteSource, tab[virement.compteSource]);
+						printf("Nouveau solde de votre compte %d : %d euro.\n", virement.compteSource, tab[virement.compteSource]);
 					} // si * n2 somme =>  Le nouveau solde du compte émetteur (“num”) n’est pas affiché.
 
-					// ajouter argent au destinateur ("n2")
-					tab[virement.compteDestination] += virement.montant;
+					
+					tab[virement.compteDestination] += virement.montant; // on credite le destinataire ("n2")
 
 					// fin zone critique
 					sem_up0(semId);

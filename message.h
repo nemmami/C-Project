@@ -6,12 +6,8 @@
 #define MAX_PSEUDO 256
 
 #define PERM 0666
-#define TYPE_AJOUT_VIREMENT 44
+#define TYPE_AJOUT_VIREMENT 44 
 #define TYPE_ENVOI_VIREMENT 55
-
-#define INSCRIPTION_REQUEST 10
-#define INSCRIPTION_OK 11
-#define INSCRIPTION_KO 12
 
 #define SHM_KEY 1234
 #define SEM_KEY 4567
@@ -19,13 +15,7 @@
 #define MESSAGE_SIZE 8192
 #define BACKLOG 5
 
-/* struct message used between server and client */
-typedef struct
-{
-  char messageText[MAX_PSEUDO];
-  int code;
-} StructMessage;
-
+/* structure d'un virment */
 typedef struct Virement
 {
   int compteSource;
@@ -33,22 +23,11 @@ typedef struct Virement
   int montant;
 } Virement;
 
+/* structure du message qu'on envoie à travers du pipe */
 typedef struct MessagePipe
 {
   int type;
   Virement virement;
 } MessagePipe;
-
-/*
-typedef struct Compte {
-  int numero;
-  int solde;
-} Compte;
-
-
-typedef struct LivretDeCompte {
-  Compte* livret;
-} LivretDeCompte;
-*/
 
 #endif
