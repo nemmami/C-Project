@@ -124,7 +124,6 @@ int main(int argc, char **argv)
 						printf("Nouveau solde de votre compte %d : %d euro.\n", virement.compteSource, tab[virement.compteSource]);
 					} // si * n2 somme =>  Le nouveau solde du compte émetteur (“num”) n’est pas affiché.
 
-					
 					tab[virement.compteDestination] += virement.montant; // on credite le destinataire ("n2")
 
 					// fin zone critique

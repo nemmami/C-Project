@@ -101,7 +101,7 @@ int main(int argc, char **argv)
 					v->montant = msgpipe.virement.montant;
 					(tailleLogique)++;
 				}
-				else if(msgpipe.type == TYPE_ENVOI_VIREMENT) // on envoie le tableau au serveur
+				else if (msgpipe.type == TYPE_ENVOI_VIREMENT) // on envoie le tableau au serveur
 				{
 					if (tailleLogique != 0)
 					{
@@ -177,7 +177,7 @@ int main(int argc, char **argv)
 					onContinue = false;
 					sclose(fd[1]); // cloture du descripteur d'écriture, on ne peux plus écrire sur le pipe
 					kill(filsID1, SIGUSR1); // on tue notre fils minuterie
-					printf("\nVous êtes déconnecté! \n");
+					printf("\nVous êtes déconnecté!");
 				}
 
 				printf("\n");

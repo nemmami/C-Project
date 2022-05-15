@@ -6,7 +6,7 @@
 #define MAX_PSEUDO 256
 
 #define PERM 0666
-#define TYPE_AJOUT_VIREMENT 44 
+#define TYPE_AJOUT_VIREMENT 44
 #define TYPE_ENVOI_VIREMENT 55
 
 #define SHM_KEY 1234
